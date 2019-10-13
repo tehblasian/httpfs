@@ -1,6 +1,6 @@
 package cli;
 
-import http.HttpServer;
+import fs.FileServer;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -18,7 +18,7 @@ public class Httpfs implements Runnable {
     @Spec
     private CommandSpec spec;
 
-    private HttpServer httpServer;
+    private FileServer fileServer;
 
     @Option(names = {"-v", "--verbose"}, description = "Prints debugging messages")
     boolean verbose;
@@ -39,9 +39,8 @@ public class Httpfs implements Runnable {
     @Override
     public void run() {
         try {
-            this.httpServer = new HttpServer(this.port);
-            this.httpServer.setDebug(verbose);
-            this.httpServer.run();
+            this.fileServer = new FileServer(this.port, this.directory, this.verbose);
+            this.fileServer.run();
         } catch (IOException e) {
             e.printStackTrace();
         }
