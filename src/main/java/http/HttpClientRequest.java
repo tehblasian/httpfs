@@ -27,6 +27,10 @@ public class HttpClientRequest extends HttpMessage {
         return this.method;
     }
 
+    public String getPath() {
+        return this.path;
+    }
+
     private static void addStatusAndReasonPhraseToResponseFromRaw(String raw, HttpClientRequest clientRequest) {
         Pattern startLineRegex = Pattern.compile("^(GET|POST)\\s(\\/\\w*[(\\-|\\_)\\w+]*(\\.\\w+)?)\\s(HTTP\\/\\d.\\d)$");
         String startLine = raw.split("\n")[0];

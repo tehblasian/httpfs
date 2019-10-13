@@ -11,6 +11,9 @@ public class HttpServer {
     private boolean running;
     private boolean debug;
 
+    private HttpRequestHandler getRequestHandler;
+    private HttpRequestHandler postRequestHandler;
+
     public HttpServer(int port) throws IOException {
         this.server = new ServerSocket(port);
         System.out.println("Server listening on port " + this.server.getLocalPort());
@@ -25,7 +28,25 @@ public class HttpServer {
                 System.out.println("Received request:\n");
                 System.out.println(clientRequest);
             }
+
+            HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
         }
+    }
+
+    public void stop() {
+        this.running = false;
+    }
+
+    public void setGetRequestHandler(HttpRequestHandler requestHandler) {
+        this.getRequestHandler = requestHandler;
+    }
+
+    public void setPostRequestHandler(HttpRequestHandler requestHandler) {
+        this.postRequestHandler = requestHandler;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     private HttpClientRequest readRequestFromClient(Socket client) throws IOException {
@@ -41,12 +62,19 @@ public class HttpServer {
         return HttpClientRequest.fromRaw(stringBuilder.toString());
     }
 
-    public void stop() {
-        this.running = false;
-    }
-
-    public void setDebug(boolean debug) {
-        this.debug = debug;
+    private HttpResponse handleHttpClientRequest(HttpClientRequest clientRequest) {
+        HttpResponse serverResponse = null;
+        switch (clientRequest.getMethod()) {
+            case "GET": {
+                serverResponse = getRequestHandler.handleRequest(clientRequest);
+                break;
+            }
+            case "POST": {
+                serverResponse = postRequestHandler.handleRequest(clientRequest);
+                break;
+            }
+        }
+        return serverResponse;
     }
 
 }
