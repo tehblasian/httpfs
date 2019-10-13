@@ -30,6 +30,8 @@ public class HttpServer {
             }
 
             HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
+            client.getOutputStream().write(serverResponse.toString().getBytes());
+            client.close();
         }
     }
 

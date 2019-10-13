@@ -34,7 +34,7 @@ public class FileServer {
     private class GetRequestHandler implements  HttpRequestHandler {
         @Override
         public HttpResponse handleRequest(HttpClientRequest clientRequest) {
-            HttpResponse response = new HttpResponse();
+            HttpResponse response = null;
             String requestPath = clientRequest.getPath();
             if (requestPath.equals("/")) {
                 try {
@@ -42,6 +42,7 @@ public class FileServer {
                     String filesJson = gson.toJson(listFilesInDataDirectory());
                     JsonObject responseData = new JsonObject();
                     responseData.addProperty("files", filesJson);
+                    response = new HttpResponse(200, "OK", responseData.toString());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
