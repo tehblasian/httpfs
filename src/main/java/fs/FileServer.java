@@ -9,11 +9,12 @@ import http.HttpRequestHandler;
 import http.HttpResponse;
 import http.HttpServer;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FileServer {
@@ -67,23 +68,31 @@ public class FileServer {
         @Override
         public HttpResponse handleRequest(HttpClientRequest clientRequest) {
             HttpResponse response = null;
-            String requestPath = clientRequest.getPath();
-            String body = clientRequest.getBody();
-
-            try {
-                String[] requestParts = requestPath.split("/");
-                if (requestParts.length == 1) {
-                    String fileName = requestParts[0];
-                    PrintWriter writer = new PrintWriter(fileName, "UTF-8");
-                    writer.println(body);
+            String fileName = getFileNameFromRequestPath(clientRequest.getPath());
+            if (fileName != null) {
+                try {
+                    writeBodyToFile(clientRequest.getBody(), fileName);
+                    response = new HttpResponse(200, "OK", "Working?");
                 }
+                catch (Exception e) {
 
-                response = new HttpResponse(200, "OK", "Working?");
-            }
-            catch (Exception e) {
-
+                }
             }
             return response;
+        }
+
+        private String getFileNameFromRequestPath(String requestPath) {
+            String[] requestParts = requestPath.split("/");
+            if (requestParts.length == 2) {
+                return requestParts[1];
+            }
+            return null;
+        }
+
+        private void writeBodyToFile(String body, String fileName) throws FileNotFoundException, UnsupportedEncodingException {
+            PrintWriter writer = new PrintWriter(fileName, "UTF-8");
+            writer.println(body);
+            writer.close();
         }
     }
 }
