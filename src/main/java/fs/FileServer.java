@@ -10,8 +10,10 @@ import http.HttpResponse;
 import http.HttpServer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FileServer {
@@ -23,6 +25,7 @@ public class FileServer {
         this.httpServer = new HttpServer(port);
         this.httpServer.setDebug(debug);
         this.httpServer.setGetRequestHandler(new GetRequestHandler());
+        this.httpServer.setPostRequestHandler(new PostRequestHandler());
         this.fileManager = new FileManagerImpl();
         this.dataDirectory = dataDirectory;
     }
@@ -60,4 +63,27 @@ public class FileServer {
         }
     }
 
+    private class PostRequestHandler implements  HttpRequestHandler {
+        @Override
+        public HttpResponse handleRequest(HttpClientRequest clientRequest) {
+            HttpResponse response = null;
+            String requestPath = clientRequest.getPath();
+            String body = clientRequest.getBody();
+
+            try {
+                String[] requestParts = requestPath.split("/");
+                if (requestParts.length == 1) {
+                    String fileName = requestParts[0];
+                    PrintWriter writer = new PrintWriter(fileName, "UTF-8");
+                    writer.println(body);
+                }
+
+                response = new HttpResponse(200, "OK", "Working?");
+            }
+            catch (Exception e) {
+
+            }
+            return response;
+        }
+    }
 }
