@@ -9,10 +9,7 @@ import http.HttpRequestHandler;
 import http.HttpResponse;
 import http.HttpServer;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,6 +46,20 @@ public class FileServer {
                     response = new HttpResponse(200, "OK", responseData.toString());
                 } catch (IOException e) {
                     e.printStackTrace();
+                }
+            } else {
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(requestPath.substring(1)));
+                    StringBuilder builder = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        builder.append(line + "\n");
+                    }
+                    response = new HttpResponse(200, "OK", builder.toString());
+                } catch (FileNotFoundException e) {
+                    response = new HttpResponse(404, "File Not Found", e.getMessage());
+                } catch (IOException e) {
+                    response = new HttpResponse(400, "IOException Reading File", e.getMessage());
                 }
             }
             return response;
