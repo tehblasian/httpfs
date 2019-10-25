@@ -72,10 +72,10 @@ public class FileServer {
             if (fileName != null) {
                 try {
                     writeBodyToFile(clientRequest.getBody(), fileName);
-                    response = new HttpResponse(200, "OK", "Working?");
+                    response = new HttpResponse(200, "OK", "Successfully Saved File");
                 }
                 catch (Exception e) {
-
+                    response = new HttpResponse(400, "Failed File Creation", "Could not create file");
                 }
             }
             return response;

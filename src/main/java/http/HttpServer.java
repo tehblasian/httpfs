@@ -56,11 +56,12 @@ public class HttpServer {
         BufferedReader reader = new BufferedReader(inputStreamReader);
 
         StringBuilder stringBuilder = new StringBuilder();
-        String line = reader.readLine();
-        while (!line.isEmpty()) {
+        String line;
+        while (reader.ready() && (line = reader.readLine()) != null) {
             stringBuilder.append(line + "\n");
-            line = reader.readLine();
         }
+
+        System.out.println(stringBuilder.toString());
         return HttpClientRequest.fromRaw(stringBuilder.toString());
     }
 
