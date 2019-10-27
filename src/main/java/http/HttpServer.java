@@ -1,8 +1,6 @@
 package http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -23,15 +21,16 @@ public class HttpServer {
         this.running = true;
         while (running) {
             Socket client = server.accept();
-            HttpClientRequest clientRequest = readRequestFromClient(client);
-            if (this.debug) {
-                System.out.println("Received request:\n");
-                System.out.println(clientRequest);
+            try {
+                if (this.debug) {
+                    System.out.println("Connection accepted\n");
+                }
+                readAndHandleRequestFromClient(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                client.close();
             }
-
-            HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
-            client.getOutputStream().write(serverResponse.toString().getBytes());
-            client.close();
         }
     }
 
@@ -51,18 +50,24 @@ public class HttpServer {
         this.debug = debug;
     }
 
-    private HttpClientRequest readRequestFromClient(Socket client) throws IOException {
-        InputStreamReader inputStreamReader = new InputStreamReader(client.getInputStream());
-        BufferedReader reader = new BufferedReader(inputStreamReader);
+    private void readAndHandleRequestFromClient(Socket client) throws IOException {
+        BufferedReader reader = new BufferedReader( new InputStreamReader(client.getInputStream()));
 
         StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        while (reader.ready() && (line = reader.readLine()) != null) {
-            stringBuilder.append(line + "\n");
+        while (reader.ready()) {
+            stringBuilder.append((char)reader.read());
+        }
+        System.out.println(stringBuilder);
+        HttpClientRequest clientRequest = HttpClientRequest.fromRaw(stringBuilder.toString());
+
+        if (this.debug) {
+            System.out.println("Received request:\n");
+            System.out.println(clientRequest);
         }
 
-        System.out.println(stringBuilder.toString());
-        return HttpClientRequest.fromRaw(stringBuilder.toString());
+        HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
+        client.getOutputStream().write(serverResponse.toString().getBytes());
+        reader.close();
     }
 
     private HttpResponse handleHttpClientRequest(HttpClientRequest clientRequest) {

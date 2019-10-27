@@ -34,7 +34,7 @@ public class HttpClientRequest extends HttpMessage {
     public String getBody() { return this.body; }
 
     private static void addStatusAndReasonPhraseToResponseFromRaw(String raw, HttpClientRequest clientRequest) {
-        Pattern startLineRegex = Pattern.compile("^(GET|POST)\\s(\\/\\w*[(\\-|\\_)\\w+]*(\\.\\w+)?)\\s(HTTP\\/\\d.\\d)$");
+        Pattern startLineRegex = Pattern.compile("^(GET|POST)\\s(\\/\\w*[(\\-|\\_)\\w+]*(\\.\\w+)?)\\s(HTTP\\/\\d.\\d)(\\n|\\r|.)*");
         String startLine = raw.split("\n")[0];
         Matcher matcher = startLineRegex.matcher(startLine);
         if (matcher.find()) {
@@ -45,7 +45,7 @@ public class HttpClientRequest extends HttpMessage {
     }
 
     private static void addHeadersToResponseFromRaw(String raw, HttpClientRequest clientRequest) {
-        Map<String, String> headers = Arrays.stream(raw.split("\n"))
+        Map<String, String> headers = Arrays.stream(raw.split("(\n|\r)"))
                 .filter(line -> line.matches("([\\w-]+):(.*)"))
                 .collect(Collectors.toMap(
                         header -> header.split(":")[0],
@@ -55,7 +55,7 @@ public class HttpClientRequest extends HttpMessage {
     }
 
     private static void addBodyToResponseFromRaw(String raw, HttpClientRequest clientRequest) {
-        String[] split = raw.split("\n\n");
+        String[] split = raw.split("\r\n\r\n");
         String body = "";
         if (split.length > 1) {
             body = split[1];
