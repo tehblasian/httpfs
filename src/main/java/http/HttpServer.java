@@ -1,5 +1,7 @@
 package http;
 
+import com.google.gson.JsonObject;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -28,6 +30,9 @@ public class HttpServer {
                 readAndHandleRequestFromClient(client);
             } catch (Exception e) {
                 e.printStackTrace();
+                HttpResponse response = new InternalServerError();
+                response.addHeader("Content-Type", "application/json");
+                client.getOutputStream().write(response.toString().getBytes());
             } finally {
                 client.close();
             }

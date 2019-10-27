@@ -4,12 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import fm.FileManager;
 import fm.FileManagerImpl;
-import http.HttpClientRequest;
-import http.HttpRequestHandler;
-import http.HttpResponse;
-import http.HttpServer;
+import http.*;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,16 +17,28 @@ public class FileServer {
     private FileManager fileManager;
     private String dataDirectory;
 
+    private boolean debug;
+
     public FileServer(int port, String dataDirectory, boolean debug) throws IOException {
         this.httpServer = new HttpServer(port);
         this.httpServer.setDebug(debug);
         this.httpServer.setGetRequestHandler(new GetRequestHandler());
         this.httpServer.setPostRequestHandler(new PostRequestHandler());
         this.fileManager = new FileManagerImpl();
-        this.dataDirectory = dataDirectory;
+        this.dataDirectory = resolveDataDirectory(dataDirectory);
+        this.debug = debug;
+    }
+
+    private String resolveDataDirectory(String dataDirectory) {
+        Path currentDir = Paths.get(System.getProperty("user.dir"));
+        Path dataDir = Paths.get(dataDirectory).normalize();
+        return Paths.get(currentDir.toString(), dataDir.toString()).toString();
     }
 
     public void run() throws IOException {
+        if (this.debug) {
+            System.out.println("Serving from " + this.dataDirectory);
+        }
         this.httpServer.run();
     }
 
@@ -41,28 +51,47 @@ public class FileServer {
                 try {
                     Gson gson = new Gson();
                     String filesJson = gson.toJson(listFilesInDataDirectory());
-                    JsonObject responseData = new JsonObject();
-                    responseData.addProperty("files", filesJson);
-                    response = new HttpResponse(200, "OK", responseData.toString());
+                    JsonObject responseBody = new JsonObject();
+                    responseBody.addProperty("success", Boolean.TRUE);
+                    responseBody.addProperty("files", filesJson);
+                    response = new HttpResponse(200, "OK", responseBody.toString());
+                    response.addHeader("Content-Type", "application/json");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    response = new InternalServerError();
+                    response.addHeader("Content-Type", "application/json");
                 }
             } else {
                 try {
-                    BufferedReader reader = new BufferedReader(new FileReader(requestPath.substring(1)));
-                    StringBuilder builder = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        builder.append(line + "\n");
-                    }
-                    response = new HttpResponse(200, "OK", builder.toString());
+                    String fileContents = readFile(requestPath.substring(1));
+                    JsonObject responseBody = new JsonObject();
+                    responseBody.addProperty("success", Boolean.TRUE);
+                    responseBody.addProperty("file", requestPath.substring(1));
+                    responseBody.addProperty("fileContents", fileContents);
+                    response = new HttpResponse(200, "OK", responseBody.toString());
+                    response.addHeader("Content-Type", "application/json");
                 } catch (FileNotFoundException e) {
-                    response = new HttpResponse(404, "File Not Found", e.getMessage());
+                    JsonObject responseBody = new JsonObject();
+                    responseBody.addProperty("success", Boolean.FALSE);
+                    responseBody.addProperty("error", "The requested file does not exist");
+                    response = new HttpResponse(404, "File Not Found", responseBody.toString());
+                    response.addHeader("Content-Type", "application/json");
                 } catch (IOException e) {
-                    response = new HttpResponse(400, "IOException Reading File", e.getMessage());
+                    response = new InternalServerError();
+                    response.addHeader("Content-Type", "application/json");
                 }
             }
             return response;
+        }
+
+        private String readFile(String filePath) throws IOException {
+            Path absoluteFilePath = Paths.get(FileServer.this.dataDirectory, filePath);
+            BufferedReader reader = new BufferedReader(new FileReader(absoluteFilePath.toFile()));
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line + "\n");
+            }
+            return builder.toString();
         }
 
         private List<String> listFilesInDataDirectory() throws IOException {
@@ -83,10 +112,15 @@ public class FileServer {
             if (fileName != null) {
                 try {
                     writeBodyToFile(clientRequest.getBody(), fileName);
-                    response = new HttpResponse(200, "OK", "Successfully Saved File");
+                    JsonObject responseBody = new JsonObject();
+                    responseBody.addProperty("success", Boolean.TRUE);
+                    responseBody.addProperty("message", "Successfully Saved File");
+                    response = new HttpResponse(200, "OK", responseBody.toString());
+                    response.addHeader("Content-Type", "application/json");
                 }
                 catch (Exception e) {
-                    response = new HttpResponse(400, "Failed File Creation", "Could not create file");
+                    response = new InternalServerError();
+                    response.addHeader("Content-Type", "application/json");
                 }
             }
             return response;
@@ -101,7 +135,8 @@ public class FileServer {
         }
 
         private void writeBodyToFile(String body, String fileName) throws FileNotFoundException, UnsupportedEncodingException {
-            PrintWriter writer = new PrintWriter(fileName, "UTF-8");
+            Path absoluteFilePath = Paths.get(FileServer.this.dataDirectory, fileName);
+            PrintWriter writer = new PrintWriter(absoluteFilePath.toFile(), "UTF-8");
             writer.println(body);
             writer.close();
         }

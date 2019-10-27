@@ -28,8 +28,9 @@ public class Httpfs implements Runnable {
 
     @Option(
             names = {"-d", "--directory"},
-            description = "Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application."
-    ) String directory = System.getProperty("user.dir");
+            description = "Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application.",
+            defaultValue = ""
+    ) String directory;
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Httpfs()).execute(args);
