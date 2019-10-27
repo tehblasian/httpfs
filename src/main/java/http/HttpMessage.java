@@ -13,6 +13,10 @@ public abstract class HttpMessage {
         this.headers = new HashMap<>();
     }
 
+    public void addHeader(String name, String value) {
+        this.headers.put(name, value);
+    }
+
     protected abstract String getStartLine();
 
     public List<String> getHeaders() {
@@ -21,7 +25,4 @@ public abstract class HttpMessage {
         return formattedHeaders;
     }
 
-    public Map<String, String> getHeadersMap() {
-        return this.headers;
-    }
 }

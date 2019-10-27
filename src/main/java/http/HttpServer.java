@@ -1,8 +1,8 @@
 package http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import com.google.gson.JsonObject;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -23,15 +23,19 @@ public class HttpServer {
         this.running = true;
         while (running) {
             Socket client = server.accept();
-            HttpClientRequest clientRequest = readRequestFromClient(client);
-            if (this.debug) {
-                System.out.println("Received request:\n");
-                System.out.println(clientRequest);
+            try {
+                if (this.debug) {
+                    System.out.println("Connection accepted\n");
+                }
+                readAndHandleRequestFromClient(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+                HttpResponse response = new InternalServerError();
+                response.addHeader("Content-Type", "application/json");
+                client.getOutputStream().write(response.toString().getBytes());
+            } finally {
+                client.close();
             }
-
-            HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
-            client.getOutputStream().write(serverResponse.toString().getBytes());
-            client.close();
         }
     }
 
@@ -51,17 +55,24 @@ public class HttpServer {
         this.debug = debug;
     }
 
-    private HttpClientRequest readRequestFromClient(Socket client) throws IOException {
-        InputStreamReader inputStreamReader = new InputStreamReader(client.getInputStream());
-        BufferedReader reader = new BufferedReader(inputStreamReader);
+    private void readAndHandleRequestFromClient(Socket client) throws IOException {
+        BufferedReader reader = new BufferedReader( new InputStreamReader(client.getInputStream()));
 
         StringBuilder stringBuilder = new StringBuilder();
-        String line = reader.readLine();
-        while (!line.isEmpty()) {
-            stringBuilder.append(line + "\n");
-            line = reader.readLine();
+        while (reader.ready()) {
+            stringBuilder.append((char)reader.read());
         }
-        return HttpClientRequest.fromRaw(stringBuilder.toString());
+        System.out.println(stringBuilder);
+        HttpClientRequest clientRequest = HttpClientRequest.fromRaw(stringBuilder.toString());
+
+        if (this.debug) {
+            System.out.println("Received request:\n");
+            System.out.println(clientRequest);
+        }
+
+        HttpResponse serverResponse = handleHttpClientRequest(clientRequest);
+        client.getOutputStream().write(serverResponse.toString().getBytes());
+        reader.close();
     }
 
     private HttpResponse handleHttpClientRequest(HttpClientRequest clientRequest) {

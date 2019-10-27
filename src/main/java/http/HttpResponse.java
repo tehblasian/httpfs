@@ -11,10 +11,20 @@ public class HttpResponse extends HttpMessage {
 
     }
 
+    public HttpResponse(int status, String reasonPhrase) {
+        super();
+        this.status = status;
+        this.reasonPhrase = reasonPhrase;
+    }
+
     public HttpResponse(int status, String reasonPhrase, String body) {
         super();
         this.status = status;
         this.reasonPhrase = reasonPhrase;
+        this.body = body;
+    }
+
+    public void setBody(String body) {
         this.body = body;
     }
 
@@ -26,7 +36,7 @@ public class HttpResponse extends HttpMessage {
     @Override
     public String toString() {
         String headers = getHeaders().stream().collect(Collectors.joining("\n"));
-        return String.format("%s\n%s\n\n%s", getStartLine(), headers, this.body);
+        return String.format("%s\n%s\r\n\r\n%s", getStartLine(), headers, this.body);
     }
 
 }
